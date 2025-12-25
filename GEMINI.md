@@ -4,12 +4,13 @@
 FakeOS is a high-performance, web-native desktop shell designed to run on real Linux hardware. It provides a desktop experience similar to XFCE directly in the browser, rendering the UI locally via the DOM while communicating with the backend to manage real files, processes, and terminals. This architecture avoids the pixel-streaming lag associated with VNC or RDP.
 
 ## Project Structure & Status
-**Current State:** Phase 3 Complete (Desktop Environment).
-The system now looks like a proper Desktop OS with a Taskbar, Start Menu, and a Window Manager supporting dragging, resizing, and minimizing.
+**Current State:** Phase 4 Complete (File Explorer & Editor).
+The system features a backend file system API (`fs`), a visual File Explorer (grid view), and a fully functional Monaco Editor for editing files on the server.
 
 ### Key Directories
-*   `server.js`: The Backend (Node.js/Express/Socket.io/node-pty).
-*   `public/`: The Frontend (HTML/Desktop CSS/JS/xterm).
+*   `server.js`: The Backend (Node.js/Express/Socket.io/node-pty/fs).
+*   `public/`: The Frontend (HTML/Desktop CSS/JS/xterm/Monaco).
+    *   `file-explorer.js`: Logic for file navigation and editing.
     *   `window-manager.js`: Handles window logic (drag, resize, maximize).
     *   `style.css`: Full desktop styling.
 *   `#Project/`: Contains internal project documentation.
@@ -42,7 +43,7 @@ The system is divided into two main components:
 1.  **Phase 1: The Heartbeat (Connection):** [COMPLETE] Setup Express & Socket.io for a secure link.
 2.  **Phase 2: The Nerves (Terminal Access):** [COMPLETE] Implement node-pty and Xterm.js for remote terminal control.
 3.  **Phase 3: The Skeleton (Desktop Environment):** [COMPLETE] Build the UI (Taskbar, Window Wrapper, App Launcher).
-4.  **Phase 4: The Eyes (File Explorer & Editor):** JSON-based file explorer and Monaco Editor integration.
+4.  **Phase 4: The Eyes (File Explorer & Editor):** [COMPLETE] JSON-based file explorer and Monaco Editor integration.
 5.  **Phase 5: The Brain (Optimization & Persistence):** Differential updates, session persistence, theming.
 6.  **Phase 6: The Launchpad (Documentation):** Deployment guides and dependencies (npm install, node server.js).
 

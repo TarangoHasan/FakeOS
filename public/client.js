@@ -6,8 +6,8 @@ const activeTerminals = [];
 
 socket.on('connect', () => {
     console.log('Connected to server');
-    // Open initial terminal
-    spawnTerminal();
+    // Open initial terminal - DISABLED per user request
+    // spawnTerminal();
 });
 
 socket.on('server-message', (msg) => {

@@ -11,6 +11,7 @@
     
     <!-- Desktop Workspace -->
     <div id="desktop">
+        <div id="desktop-icons"></div>
         <!-- Windows will be injected here -->
     </div>
 
@@ -19,12 +20,17 @@
         <div class="start-menu-item" onclick="WindowManager.createTerminal()">
             <span>>_ Terminal</span>
         </div>
-        <div class="start-menu-item" onclick="alert('File Explorer coming in Phase 4!')">
+        <div class="start-menu-item" onclick="FileExplorer.open()">
             <span>📂 File Explorer</span>
         </div>
         <div class="start-menu-item" onclick="window.location.reload()">
             <span>🔄 Reload System</span>
         </div>
+    </div>
+
+    <!-- Context Menu -->
+    <div id="context-menu">
+        <!-- Dynamic Items -->
     </div>
 
     <!-- Taskbar -->
@@ -40,9 +46,19 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="/xterm/lib/xterm.js"></script>
     <script src="/xterm-addon-fit/lib/xterm-addon-fit.js"></script>
+    
+    <!-- Monaco Editor Loader -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+    <script>
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' }});
+        require(['vs/editor/editor.main'], function() {
+            window.monaco = monaco; // Expose globally
+        });
+    </script>
 
     <!-- System Scripts -->
     <script src="window-manager.js"></script>
+    <script src="file-explorer.js"></script>
     <script src="client.js"></script>
 
     <script>
