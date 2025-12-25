@@ -1,0 +1,26 @@
+{
+  "name": "fakeos",
+  "version": "1.0.0",
+  "description": "Unlike traditional remote desktops that stream pixels (video), FakeOS renders the UI locally using the browser's DOM. It communicates with your device via a lightweight API to manage real files, processes, and terminals.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TarangoHasan/FakeOS.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/TarangoHasan/FakeOS/issues"
+  },
+  "homepage": "https://github.com/TarangoHasan/FakeOS#readme",
+  "dependencies": {
+    "express": "^5.2.1",
+    "socket.io": "^4.8.3"
+  }
+}
