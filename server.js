@@ -17,6 +17,9 @@ app.use(express.json());
 // Serve static files from 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Serve static files from 'site' directory (for documentation)
+app.use('/site', express.static(path.join(__dirname, 'site')));
+
 // Serve xterm files
 app.use('/xterm', express.static(path.join(__dirname, 'node_modules/xterm')));
 app.use('/xterm-addon-fit', express.static(path.join(__dirname, 'node_modules/xterm-addon-fit')));
