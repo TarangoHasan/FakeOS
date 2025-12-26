@@ -93,4 +93,4 @@ This project is under active development.
 
 ## **📄 License**
 
-ISC License.
+MIT License.
