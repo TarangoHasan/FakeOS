@@ -714,7 +714,14 @@ window.FakeMedia = {
 window.FakeBrowser = {
     open(path, name) {
         const id = 'browser-' + Date.now();
-        const initialUrl = path ? `/api/stream?path=${encodeURIComponent(path)}` : 'about:blank';
+        let initialUrl = 'about:blank';
+        if (path) {
+            if (path.startsWith('http://') || path.startsWith('https://')) {
+                initialUrl = path;
+            } else {
+                initialUrl = `/api/stream?path=${encodeURIComponent(path)}`;
+            }
+        }
         const displayUrl = path || 'about:blank';
         const title = name ? `Browser: ${name}` : 'Browser';
 
