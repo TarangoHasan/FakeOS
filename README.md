@@ -1,8 +1,8 @@
-# **FakeOS**
+# **FakeOS Desktop**
 
 ### The "Fake" Desktop that's actually Real.
 
-**FakeOS** is a high-performance, Web-Native Desktop Shell designed for real Linux and Windows hardware. It provides a full desktop experience (similar to XFCE) directly in your browser, without the lag of VNC or RDP.
+**FakeOS Desktop** is a high-performance, Web-Native Desktop Shell designed for real Linux and Windows hardware. It provides a full desktop experience (similar to XFCE) directly in your browser, without the lag of VNC or RDP.
 
 Unlike traditional remote desktops that stream pixels (video), FakeOS renders the UI locally using the browser's DOM. It communicates with your device via a lightweight API to manage real files, processes, and terminals.
 
