@@ -100,11 +100,12 @@ body {
     left: 0;
     width: 100%;
     height: 40px;
-    background-color: var(--taskbar-bg);
-    border-top: 1px solid #333;
+    background-color: rgba(30, 30, 30, 0.85);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
     display: flex;
     align-items: center;
-    padding: 0 10px;
+    padding: 0 5px;
     z-index: 10000;
 }
 
@@ -112,34 +113,55 @@ body {
     background-color: var(--start-btn);
     color: white;
     border: none;
-    padding: 5px 15px;
-    font-weight: bold;
+    padding: 0 15px;
+    height: 32px;
+    font-weight: 600;
     cursor: pointer;
-    border-radius: 2px;
-    margin-right: 10px;
+    border-radius: 4px;
+    margin: 0 10px 0 5px;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.2s, transform 0.1s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
 #start-button:hover {
     background-color: var(--accent-hover);
+    transform: translateY(-1px);
+}
+
+#start-button:active {
+    transform: translateY(0);
 }
 
 .taskbar-item {
-    background-color: #333;
-    color: #ddd;
-    padding: 5px 15px;
-    margin-right: 5px;
-    border-radius: 2px;
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #eee;
+    padding: 0 15px;
+    height: 32px;
+    margin-right: 4px;
+    border-radius: 4px;
     cursor: pointer;
-    border-bottom: 2px solid transparent;
+    display: flex;
+    align-items: center;
+    font-size: 0.85rem;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .taskbar-item:hover {
-    background-color: #444;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.1);
 }
 
 .taskbar-item.active {
-    background-color: #444;
+    background-color: rgba(0, 122, 204, 0.3);
     border-bottom: 2px solid var(--accent-color);
+    color: white;
 }
 
 #clock {

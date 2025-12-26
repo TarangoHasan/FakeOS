@@ -714,7 +714,9 @@ window.FakeMedia = {
 window.FakeBrowser = {
     open(path, name) {
         const id = 'browser-' + Date.now();
-        let initialUrl = 'about:blank';
+        const defaultUrl = 'https://www.google.com/webhp?igu=1'; // /webhp?igu=1 often allows iframe embedding for Google
+        let initialUrl = defaultUrl;
+        
         if (path) {
             if (path.startsWith('http://') || path.startsWith('https://')) {
                 initialUrl = path;
@@ -722,7 +724,8 @@ window.FakeBrowser = {
                 initialUrl = `/api/stream?path=${encodeURIComponent(path)}`;
             }
         }
-        const displayUrl = path || 'about:blank';
+        
+        const displayUrl = path || defaultUrl;
         const title = name ? `Browser: ${name}` : 'Browser';
 
         WindowManager.createWindow(title, 800, 600, (container) => {

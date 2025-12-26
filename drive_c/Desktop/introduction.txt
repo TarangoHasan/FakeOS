@@ -1,5 +1,10 @@
 Hello user,
-Im TarangoHasan. Its FakeOS, You can say FakeOS Desktop. Because it's a Desktop app.
+Im TarangoHasan. Its FakeOS Desktop.
 
-This Desktop in this project directory: FakeOS/drive_c/Desktop
+This Desktop (from where you opened that text file) in this project directory: FakeOS/drive_c/Desktop
 Its a Fake Drive for this project.
+
+It's still under Development. So I will introduce feature later. If you want to help this Project, Give me suggestions, ideas, etc. For improving it.
+Thanks for Using!
+
+(Also Rate this Project)
