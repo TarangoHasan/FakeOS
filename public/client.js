@@ -73,3 +73,11 @@ window.spawnTerminal = function() {
         });
     });
 };
+
+// Global UI Handlers
+document.addEventListener('click', (e) => {
+    const menu = document.getElementById('context-menu');
+    if (menu && menu.style.display !== 'none') {
+        menu.style.display = 'none';
+    }
+});

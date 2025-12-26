@@ -139,12 +139,59 @@ app.post('/api/folder', (req, res) => {
 app.delete('/api/file', (req, res) => {
     const filePath = req.query.path;
     try {
-        const stats = fs.statSync(filePath);
-        if (stats.isDirectory()) {
-            fs.rmdirSync(filePath, { recursive: true });
-        } else {
-            fs.unlinkSync(filePath);
+        fs.rmSync(filePath, { recursive: true, force: true });
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// API: Rename File/Directory
+app.post('/api/rename', (req, res) => {
+    const { oldPath, newPath } = req.body;
+    try {
+        fs.renameSync(oldPath, newPath);
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// API: Copy File/Directory
+app.post('/api/copy', (req, res) => {
+    const { sourcePath, destPath } = req.body;
+    try {
+        let targetPath = destPath;
+        
+        // Handle Duplicates
+        if (fs.existsSync(targetPath)) {
+            const ext = path.extname(destPath);
+            const name = path.basename(destPath, ext);
+            const dir = path.dirname(destPath);
+            
+            // If the user wants "fileorfolder-copy", then "fileorfolder-copy-copy"
+            // We loop until we find a non-existent path
+            let currentPath = targetPath;
+            while (fs.existsSync(currentPath)) {
+                 const currentExt = path.extname(currentPath);
+                 const currentName = path.basename(currentPath, currentExt);
+                 currentPath = path.join(dir, `${currentName}-copy${currentExt}`);
+            }
+            targetPath = currentPath;
         }
+
+        fs.cpSync(sourcePath, targetPath, { recursive: true });
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// API: Move File/Directory
+app.post('/api/move', (req, res) => {
+    const { sourcePath, destPath } = req.body;
+    try {
+        fs.renameSync(sourcePath, destPath);
         res.json({ success: true });
     } catch (e) {
         res.status(500).json({ error: e.message });

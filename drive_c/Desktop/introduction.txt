@@ -1,0 +1,5 @@
+Hello user,
+Im TarangoHasan. Its FakeOS, You can say FakeOS Desktop. Because it's a Desktop app.
+
+This Desktop in this project directory: FakeOS/drive_c/Desktop
+Its a Fake Drive for this project.

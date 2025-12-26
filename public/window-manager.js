@@ -38,6 +38,11 @@ const WindowManager = {
             <div class="resizer resizer-br"></div>
         `;
 
+        // Prevent Desktop Context Menu from triggering inside windows
+        win.addEventListener('contextmenu', (e) => {
+            e.stopPropagation();
+        });
+
         this.desktop.appendChild(win);
         
         // Add to tracking

@@ -1,7 +1,8 @@
 window.FileExplorer = {
     currentPath: '.',
     contextPath: null, 
-    
+    clipboard: null, // { path: string, type: 'copy'|'cut' }
+
     // --- Initialization & Explorer Window ---
     open() {
         console.log("Opening File Explorer...");
@@ -55,10 +56,11 @@ window.FileExplorer = {
                 item.className = 'fe-item';
                 item.title = file.name;
                 item.dataset.path = file.path;
+                item.dataset.isDirectory = file.isDirectory; // Add for Drag & Drop
                 item.style.cssText = 'width: 80px; text-align: center; cursor: pointer; padding: 5px; border-radius: 4px; overflow: hidden;';
                 item.innerHTML = `
-                    <div style="font-size: 2rem;">${file.isDirectory ? '📁' : '📄'}</div>
-                    <div style="font-size: 0.8rem; word-break: break-all; margin-top: 5px; max-height: 3em; overflow: hidden;">${file.name}</div>
+                    <div style="font-size: 2rem; pointer-events: none;">${file.isDirectory ? '📁' : '📄'}</div>
+                    <div style="font-size: 0.8rem; word-break: break-all; margin-top: 5px; max-height: 3em; overflow: hidden; pointer-events: none;">${file.name}</div>
                 `;
                 
                 item.onmouseenter = () => item.style.backgroundColor = '#444';
@@ -126,6 +128,8 @@ window.FileExplorer = {
                 icon.className = 'desktop-icon';
                 icon.title = file.name;
                 icon.id = `icon-${file.name}`; // simple ID for tracking
+                icon.dataset.path = file.path; // Store path
+                icon.dataset.isDirectory = file.isDirectory; // Store type
                 icon.innerHTML = `
                     <div class="desktop-icon-img">${file.isDirectory ? '📁' : '📄'}</div>
                     <div class="desktop-icon-text">${file.name}</div>
@@ -226,14 +230,68 @@ window.FileExplorer = {
         icon.style.top = newY + 'px';
     },
 
-    stopIconDrag: () => {
+    stopIconDrag: (e) => {
         const fe = FileExplorer;
         if (!fe.isDraggingIcon) return;
 
         const icon = fe.dragIcon;
         icon.classList.remove('dragging');
+        
+        // Check for Drop Target (Folder)
+        // We use clientX/Y from the event if available, otherwise we might need to track it
+        const x = e.clientX || (parseInt(icon.style.left) + fe.dragOffset.x);
+        const y = e.clientY || (parseInt(icon.style.top) + fe.dragOffset.y);
 
-        // Save Position
+        const dropTargets = document.elementsFromPoint(x, y);
+        let targetFolder = null;
+
+        for (let el of dropTargets) {
+            // Check Desktop Icons
+            if (el.classList.contains('desktop-icon') && el !== icon && el.dataset.isDirectory === 'true') {
+                targetFolder = el.dataset.path;
+                break;
+            }
+            // Check File Explorer Items
+            if (el.classList.contains('fe-item') && el.dataset.isDirectory === 'true') {
+                targetFolder = el.dataset.path;
+                break;
+            }
+        }
+
+        if (targetFolder) {
+            const sourcePath = icon.dataset.path;
+            const fileName = fe.dragIconName;
+            const separator = (targetFolder.endsWith('\\') || targetFolder.endsWith('/')) ? '' : '\\';
+            const destPath = targetFolder + separator + fileName;
+
+            if (confirm(`Move '${fileName}' to folder?`)) {
+                fetch('/api/move', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sourcePath, destPath })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        fe.refreshCurrentView();
+                    } else {
+                        alert('Move failed: ' + data.error);
+                        // Revert position visually if failed
+                        fe.loadDesktopIcons();
+                    }
+                });
+                
+                // Reset Drag State and Return (Don't save new position)
+                fe.isDraggingIcon = false;
+                fe.dragIcon = null;
+                fe.dragIconName = null;
+                document.removeEventListener('mousemove', fe.onIconDrag);
+                document.removeEventListener('mouseup', fe.stopIconDrag);
+                return;
+            }
+        }
+
+        // Save Position (Only if not moved)
         const savedPositions = JSON.parse(localStorage.getItem('desktop_icons_pos') || '{}');
         savedPositions[fe.dragIconName] = {
             x: parseInt(icon.style.left),
@@ -278,25 +336,109 @@ window.FileExplorer = {
         menu.style.top = e.clientY + 'px';
 
         // Boundary check for menu to keep it on screen
-        if (e.clientY + 150 > window.innerHeight) {
-             menu.style.top = (e.clientY - 150) + 'px';
+        if (e.clientY + 200 > window.innerHeight) {
+             menu.style.top = (e.clientY - 200) + 'px';
         }
+
+        let menuHtml = '';
 
         if (file) {
             const escapedPath = file.path.replace(/\\/g, '\\\\');
-            menu.innerHTML = `
+            menuHtml += `
                 <div class="context-menu-item" onclick="alert('Properties: ${file.name}')">Properties</div>
+                <div class="context-menu-separator"></div>
+                <div class="context-menu-item" onclick="FileExplorer.renameItem('${escapedPath}', '${file.name}')">Rename</div>
+                <div class="context-menu-item" onclick="FileExplorer.copyItem('${escapedPath}', 'copy')">Copy</div>
+                <div class="context-menu-item" onclick="FileExplorer.copyItem('${escapedPath}', 'cut')">Cut</div>
                 <div class="context-menu-separator"></div>
                 <div class="context-menu-item" onclick="FileExplorer.deleteItem('${escapedPath}')">Delete</div>
             `;
         } else {
-            menu.innerHTML = `
+            menuHtml += `
                 <div class="context-menu-item" onclick="FileExplorer.createNewFolder()">New Folder</div>
                 <div class="context-menu-item" onclick="FileExplorer.createNewFile()">New Text Document</div>
                 <div class="context-menu-separator"></div>
                 <div class="context-menu-item" onclick="FileExplorer.loadDesktopIcons(); if(FileExplorer.contextPath !== 'drive_c/Desktop') FileExplorer.loadPath(FileExplorer.contextPath)">Refresh</div>
             `;
+            
+            if (this.clipboard) {
+                menuHtml += `
+                    <div class="context-menu-separator"></div>
+                    <div class="context-menu-item" onclick="FileExplorer.pasteItem()">Paste</div>
+                `;
+            }
         }
+        
+        menu.innerHTML = menuHtml;
+    },
+
+    renameItem(path, currentName) {
+        const newName = prompt("Enter new name:", currentName);
+        if (!newName || newName === currentName) return;
+
+        // Construct new path
+        // We need to find the parent dir of 'path'
+        const separator = path.includes('\\') ? '\\' : '/';
+        const parentDir = path.substring(0, path.lastIndexOf(separator));
+        const newPath = parentDir + separator + newName;
+
+        fetch('/api/rename', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ oldPath: path, newPath: newPath })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                this.refreshCurrentView();
+            } else {
+                alert('Rename failed: ' + data.error);
+            }
+        });
+    },
+
+    copyItem(path, type) {
+        this.clipboard = { path, type };
+        // alert((type === 'cut' ? 'Cut' : 'Copied') + ' to clipboard');
+    },
+
+    pasteItem() {
+        if (!this.clipboard) return;
+        
+        const destDir = this.contextPath;
+        // Determine destination path (keep original name)
+        const separator = this.clipboard.path.includes('\\') ? '\\' : '/';
+        const fileName = this.clipboard.path.substring(this.clipboard.path.lastIndexOf(separator) + 1);
+        
+        // Fix for destination path separator
+        const destSeparator = (destDir.endsWith('\\') || destDir.endsWith('/')) ? '' : '\\';
+        const destPath = destDir + destSeparator + fileName;
+
+        const endpoint = this.clipboard.type === 'cut' ? '/api/move' : '/api/copy';
+
+        fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sourcePath: this.clipboard.path, destPath: destPath })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                if (this.clipboard.type === 'cut') this.clipboard = null; // Clear if cut
+                this.refreshCurrentView();
+            } else {
+                alert('Paste failed: ' + data.error);
+            }
+        });
+    },
+
+    refreshCurrentView() {
+        // Refresh Explorer Window if it is active
+        if (this.currentPath && document.getElementById('fe-grid')) {
+            this.loadPath(this.currentPath);
+        }
+        // Always refresh desktop icons
+        this.loadDesktopIcons();
     },
 
     createNewFolder() {
@@ -315,8 +457,7 @@ window.FileExplorer = {
         .then(res => res.json())
         .then(data => {
             if (data.success) {
-                if (this.contextPath !== 'drive_c/Desktop') this.loadPath(this.contextPath);
-                this.loadDesktopIcons(); 
+                this.refreshCurrentView();
             }
             else alert(data.error);
         });
@@ -338,8 +479,7 @@ window.FileExplorer = {
         .then(res => res.json())
         .then(data => {
             if (data.success) {
-                if (this.contextPath !== 'drive_c/Desktop') this.loadPath(this.contextPath);
-                this.loadDesktopIcons();
+                this.refreshCurrentView();
             }
             else alert(data.error);
         });
@@ -354,8 +494,7 @@ window.FileExplorer = {
         .then(res => res.json())
         .then(data => {
             if (data.success) {
-                 if (this.contextPath !== 'drive_c/Desktop') this.loadPath(this.contextPath);
-                 this.loadDesktopIcons();
+                 this.refreshCurrentView();
             }
             else alert(data.error);
         });
