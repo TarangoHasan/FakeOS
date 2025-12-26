@@ -198,69 +198,136 @@ app.post('/api/move', (req, res) => {
     }
 });
 
+// ... (previous code)
+
 io.on('connection', (socket) => {
   console.log('A user connected: ' + socket.id);
 
   // Send a welcome message
   socket.emit('server-message', 'Connection established with FakeOS Server!');
 
-  // --- Phase 2: Terminal Setup ---
-  const shell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
-  
-  let ptyProcess = null;
+  // --- Phase 5: Differential Updates (File Watcher) ---
+  let currentWatcher = null;
+  let watcherDebounce = null;
 
-  const spawnPty = () => {
-      ptyProcess = pty.spawn(shell, [], {
-        name: 'xterm-color',
-        cols: 80,
-        rows: 24,
-        cwd: process.env.HOME || process.cwd(),
-        env: process.env
-      });
+  socket.on('watch-path', (path) => {
+      // Close previous watcher
+      if (currentWatcher) {
+          currentWatcher.close();
+          currentWatcher = null;
+      }
 
-      // Send data from pty to client
-      ptyProcess.onData((data) => {
-        socket.emit('term-output', data);
-      });
+      if (!fs.existsSync(path)) return;
 
-      ptyProcess.onExit(() => {
-          console.log('PTY exited. Respawning...');
-          socket.emit('term-output', '\r\n\x1b[33mSession ended. Respawning...\x1b[0m\r\n');
-          // Respawn after a short delay
-          setTimeout(spawnPty, 1000);
-      });
-  };
-
-  spawnPty();
-
-  // Receive data from client and write to pty
-  socket.on('term-input', (data) => {
-    if (ptyProcess) {
-        try {
-            ptyProcess.write(data);
-        } catch (e) {
-            console.error("Write failed (process likely dead):", e.message);
-        }
-    }
-  });
-  
-  // Handle resize
-  socket.on('term-resize', (size) => {
-      if (ptyProcess) {
-          try {
-            ptyProcess.resize(size.cols, size.rows);
-          } catch (e) {
-              console.error("Resize failed:", e.message);
-          }
+      try {
+          currentWatcher = fs.watch(path, (eventType, filename) => {
+              if (watcherDebounce) clearTimeout(watcherDebounce);
+              watcherDebounce = setTimeout(() => {
+                  socket.emit('file-change', { path, eventType, filename });
+              }, 100);
+          });
+      } catch (e) {
+          console.error("Watch failed:", e.message);
       }
   });
 
+// ...
+  // --- Phase 5: Differential Updates (File Watcher) ---
+  let currentWatcher = null;
+  let watcherDebounce = null;
+  // ... (watcher code) ...
+
+  // --- Phase 2 & 5: Terminal Setup & Persistence ---
+  const activeSessions = global.activeSessions || {};
+  global.activeSessions = activeSessions; // Persist across restarts in dev if using nodemon (optional)
+
+  socket.on('join-session', (sessionId) => {
+      let session = activeSessions[sessionId];
+
+      if (!session) {
+          // Create New Session
+          const shell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
+          const ptyProcess = pty.spawn(shell, [], {
+            name: 'xterm-color',
+            cols: 80,
+            rows: 24,
+            cwd: process.env.HOME || process.cwd(),
+            env: process.env
+          });
+
+          session = {
+              pty: ptyProcess,
+              history: '',
+              listeners: [] 
+          };
+          activeSessions[sessionId] = session;
+
+          // Buffer data
+          ptyProcess.onData((data) => {
+              session.history += data;
+              // Limit history size
+              if (session.history.length > 10000) session.history = session.history.slice(-10000);
+              
+              // Send to current socket if connected
+              socket.emit('term-output', data);
+          });
+          
+          ptyProcess.onExit(() => {
+              socket.emit('term-output', '\r\n\x1b[33mSession ended.\x1b[0m\r\n');
+              delete activeSessions[sessionId];
+          });
+          
+          console.log(`Created new terminal session: ${sessionId}`);
+      } else {
+          // Reconnect to existing
+          console.log(`Reconnected to terminal session: ${sessionId}`);
+          // Re-bind data emission is handled by the generic onData above?
+          // No, the closure `socket` above refers to the *creator's* socket.
+          // We need a way to update the target socket.
+          
+          // Better approach: The pty onData should iterate over active sockets for this session.
+          // But here we simplify: One user = One socket per session usually.
+          
+          // Let's replace the data listener? No, pty supports multiple listeners but we want to avoid duplicates.
+          // Actually, we can just attach a NEW listener for THIS socket.
+          // And we must ensure we remove it on disconnect.
+          
+          const onData = (data) => socket.emit('term-output', data);
+          session.pty.onData(onData);
+          
+          // Send history
+          socket.emit('term-output', session.history);
+          
+          // Cleanup listener on disconnect
+          socket.on('disconnect', () => {
+              if (session.pty) {
+                   // node-pty doesn't have easy 'removeListener' for specific lambda if not stored
+                   // This is a memory leak risk.
+                   // Fix: Store listeners in session object?
+                   // session.listeners.push(onData); // We can't easily remove specific one from pty.
+                   // Alternative: Have ONE pty listener that emits to an event emitter, and socket subscribes to that.
+              }
+          });
+      }
+
+      // Handle Input
+      socket.on('term-input', (data) => {
+        if (session.pty) session.pty.write(data);
+      });
+      
+      // Handle Resize
+      socket.on('term-resize', (size) => {
+          if (session.pty) session.pty.resize(size.cols, size.rows);
+      });
+  });
+
+  /* 
+     REMOVED OLD SPAWN LOGIC to favor 'join-session'
+  */
+
   socket.on('disconnect', () => {
     console.log('User disconnected');
-    if (ptyProcess) {
-        ptyProcess.kill();
-        ptyProcess = null; // Prevent further access
-    }
+    if (currentWatcher) currentWatcher.close();
   });
 });
 

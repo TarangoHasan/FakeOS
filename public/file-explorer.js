@@ -6,7 +6,19 @@ window.FileExplorer = {
     // --- Initialization & Explorer Window ---
     open() {
         console.log("Opening File Explorer...");
+        // Setup Watcher Listener if not already
+        if (!this.watcherSetup) {
+            socket.on('file-change', (data) => {
+                // If the changed path is what we are looking at (or desktop)
+                if (data.path === this.currentPath || data.path === 'drive_c/Desktop' || (data.path.includes('Desktop') && this.currentPath === 'drive_c/Desktop')) {
+                    this.refreshCurrentView();
+                }
+            });
+            this.watcherSetup = true;
+        }
+
         WindowManager.createWindow('File Explorer', 700, 500, (container) => {
+// ...
             container.innerHTML = `
                 <div class="fe-toolbar" style="padding: 5px; border-bottom: 1px solid #444; display: flex; gap: 5px;">
                     <button onclick="FileExplorer.navigateUp()">⬆ Up</button>
@@ -29,8 +41,13 @@ window.FileExplorer = {
     async loadPath(path) {
         try {
             console.log("Loading path:", path);
+            
+            // Tell server to watch this path
+            if (window.socket) socket.emit('watch-path', path);
+
             const res = await fetch(`/api/files?path=${encodeURIComponent(path)}`);
             const data = await res.json();
+// ...
             
             if (data.error) {
                 alert('Error: ' + data.error);

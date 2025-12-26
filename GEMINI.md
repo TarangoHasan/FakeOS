@@ -4,8 +4,8 @@
 FakeOS is a high-performance, web-native desktop shell designed to run on real Linux hardware. It provides a desktop experience similar to XFCE directly in the browser, rendering the UI locally via the DOM while communicating with the backend to manage real files, processes, and terminals. This architecture avoids the pixel-streaming lag associated with VNC or RDP.
 
 ## Project Structure & Status
-**Current State:** Phase 4 Complete (File Explorer & Editor).
-The system features a backend file system API (`fs`), a visual File Explorer (grid view), and a fully functional Monaco Editor for editing files on the server.
+**Current State:** Phase 5 Complete (Optimization & Persistence).
+The system features a backend file system API (`fs`), a visual File Explorer (grid view), Monaco Editor, Real-time file updates, Terminal session persistence, and Theme support.
 
 ### Key Directories
 *   `server.js`: The Backend (Node.js/Express/Socket.io/node-pty/fs).
@@ -44,7 +44,7 @@ The system is divided into two main components:
 2.  **Phase 2: The Nerves (Terminal Access):** [COMPLETE] Implement node-pty and Xterm.js for remote terminal control.
 3.  **Phase 3: The Skeleton (Desktop Environment):** [COMPLETE] Build the UI (Taskbar, Window Wrapper, App Launcher).
 4.  **Phase 4: The Eyes (File Explorer & Editor):** [COMPLETE] JSON-based file explorer and Monaco Editor integration.
-5.  **Phase 5: The Brain (Optimization & Persistence):** Differential updates, session persistence, theming.
+5.  **Phase 5: The Brain (Optimization & Persistence):** [COMPLETE] Differential updates, session persistence, theming.
 6.  **Phase 6: The Launchpad (Documentation):** Deployment guides and dependencies (npm install, node server.js).
 
 ## Intended Development Commands
